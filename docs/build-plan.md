@@ -89,6 +89,14 @@ decorator. `GET /me` smoke test. **Open item:** dev-only verifier so `/auth/logi
 accepts a fake subject locally without a device. **Commit:** `feat: teacher auth
 via provider id-token exchange for api jwt`
 
+**Config validation (do as part of this chunk):** add a `validationSchema` (Joi)
+to `ConfigModule.forRoot` so the app fails fast at boot on missing/malformed env.
+This chunk introduces the first vars where a silent default is dangerous —
+`JWT_SECRET` (mark `required()`, enforce a min length) and `GOOGLE_CLIENT_ID`
+(`required()`). Fold the existing `DB_*` vars in too (`DB_PORT` as `number()` to
+fix the string→number coercion) and drop the now-redundant inline defaults in
+`app.module.ts`. Add the new vars to `.env.example`. Dep: `joi`.
+
 ### Chunk 3 — Classes CRUD (teacher-scoped)
 `Class` entity + module/service/controller + DTOs. `POST/GET/GET:id/PATCH/DELETE
 /classes`, all scoped to `@CurrentTeacher()`; 404 (not 403) if not the teacher's.

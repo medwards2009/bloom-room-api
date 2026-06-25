@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+import { AuthModule } from './auth/auth.module';
 import { envValidationSchema } from './config/env.validation';
 import { HealthController } from './health/health.controller';
 import { UserModule } from './user/user.module';
@@ -10,6 +11,9 @@ import { UserModule } from './user/user.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      // Tests load .env.test (isolated DB + dev-mode auth) so they never touch the
+      // dev database; everything else uses .env.
+      envFilePath: process.env.NODE_ENV === 'test' ? '.env.test' : '.env',
       validationSchema: envValidationSchema,
     }),
     TypeOrmModule.forRootAsync({
@@ -29,6 +33,7 @@ import { UserModule } from './user/user.module';
       }),
     }),
     UserModule,
+    AuthModule,
   ],
   controllers: [HealthController],
 })

@@ -8,7 +8,10 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { MeController } from './me.controller';
 import { DevTokenVerifier } from './token-verifier/dev-token-verifier';
-import { GoogleTokenVerifier } from './token-verifier/google-token-verifier';
+import {
+  GoogleExchangeConfig,
+  GoogleTokenVerifier,
+} from './token-verifier/google-token-verifier';
 import { TOKEN_VERIFIER, TokenVerifier } from './token-verifier/token-verifier';
 
 function parseClientIds(raw: string | undefined): string[] {
@@ -39,8 +42,23 @@ function parseClientIds(raw: string | undefined): string[] {
       inject: [ConfigService],
       useFactory: (config: ConfigService): TokenVerifier => {
         const clientIds = parseClientIds(config.get<string>('GOOGLE_CLIENT_IDS'));
+
+        // Auth-code exchange needs a specific web client id + secret pair. When
+        // both are set, the web id must be in the audience allow-list.
+        const webClientId = config.get<string>('GOOGLE_WEB_CLIENT_ID');
+        const clientSecret = config.get<string>('GOOGLE_CLIENT_SECRET');
+        let exchange: GoogleExchangeConfig | undefined;
+        if (webClientId && clientSecret) {
+          if (!clientIds.includes(webClientId)) {
+            throw new Error(
+              'GOOGLE_WEB_CLIENT_ID must be included in GOOGLE_CLIENT_IDS',
+            );
+          }
+          exchange = { clientId: webClientId, clientSecret };
+        }
+
         const google = clientIds.length
-          ? new GoogleTokenVerifier(clientIds)
+          ? new GoogleTokenVerifier(clientIds, exchange)
           : null;
 
         if (config.get<boolean>('AUTH_DEV_MODE')) {

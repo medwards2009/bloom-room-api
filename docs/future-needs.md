@@ -31,6 +31,10 @@ an image or committed:
   `AUTH_DEV_MODE` is off).
 - `GOOGLE_CLIENT_IDS` — the allowed OAuth client id(s); required when
   `AUTH_DEV_MODE` is off.
+- `GOOGLE_WEB_CLIENT_ID` — the web OAuth client id used for the auth-code exchange
+  (must be one of `GOOGLE_CLIENT_IDS`).
+- `GOOGLE_CLIENT_SECRET` — the web client secret for the code exchange; lives ONLY
+  on the API, never in the web app.
 - `DB_PASSWORD` (and the rest of `DB_*` as appropriate for the managed database).
 
 Also for production, not dev-only:

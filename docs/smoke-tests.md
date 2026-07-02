@@ -48,7 +48,8 @@ TOKEN=$(curl -s -X POST $BASE/auth/login \
 | 3.4 | `/me` with garbage token | `curl -s -o /dev/null -w '%{http_code}' $BASE/me -H "Authorization: Bearer not.a.real.token"` | `401` |
 | 3.5 | Find-or-create (no dup) | run 3.1 twice, compare `user.id` | identical id; `SELECT count(*) FROM users` unchanged |
 | 3.6 | DTO validation | `curl -s -o /dev/null -w '%{http_code}' -X POST $BASE/auth/login -H 'Content-Type: application/json' -d '{"provider":"google"}'` | `400` (missing `idToken`) |
-| 3.7 | Real Google token (web) | sign in via the `bloom-room-web` login page | `200`; `user.authSubject` is the Google `sub`, `user.email`, `user.firstName`, `user.lastName` populated from the token |
+| 3.7 | Real Google login (web auth-code) | with `GOOGLE_WEB_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` set, sign in via the `bloom-room-web` login page (posts `{provider:'google', code}`) | `200`; API exchanges the code, then `user.authSubject` is the Google `sub`, and `user.email`/`firstName`/`lastName` are populated from the token |
+| 3.8 | Exactly-one credential | `curl -s -o /dev/null -w '%{http_code}' -X POST $BASE/auth/login -H 'Content-Type: application/json' -d '{"provider":"google"}'` (neither) and again with both `idToken` and `code` | `400` in both cases |
 
 ### Cross-tenant / persistence (run periodically)
 - Log in as a second subject (`dev-teacher-2`) → distinct `user.id`; first user's data never leaks.

@@ -10,11 +10,22 @@ export interface VerifiedIdentity {
 }
 
 /**
- * Provider-agnostic verification of an OAuth id-token. Implementations: real
- * Google verification, and a dev verifier for local work.
+ * A login credential: exactly one of an id-token (mobile/One-Tap/dev) or an
+ * authorization code (the web auth-code popup flow), for a given provider.
+ */
+export interface VerifyInput {
+  provider: AuthProvider;
+  idToken?: string;
+  code?: string;
+}
+
+/**
+ * Provider-agnostic verification of a login credential. Implementations: real
+ * Google verification (id-token verify + auth-code exchange), and a dev verifier
+ * for local work.
  */
 export interface TokenVerifier {
-  verify(provider: AuthProvider, idToken: string): Promise<VerifiedIdentity>;
+  verify(input: VerifyInput): Promise<VerifiedIdentity>;
 }
 
 /** DI token for the configured TokenVerifier (chosen by AUTH_DEV_MODE). */

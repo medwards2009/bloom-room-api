@@ -1,4 +1,9 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -32,9 +37,18 @@ export class AuthService {
     private readonly jwt: JwtService,
   ) {}
 
-  /** Verify a provider token, find-or-create the user, and issue our JWT. */
+  /** Verify a provider credential, find-or-create the user, and issue our JWT. */
   async login(dto: LoginDto): Promise<{ accessToken: string; user: User }> {
-    const identity = await this.verifier.verify(dto.provider, dto.idToken);
+    if (Boolean(dto.idToken) === Boolean(dto.code)) {
+      throw new BadRequestException(
+        'Provide exactly one of "idToken" or "code"',
+      );
+    }
+    const identity = await this.verifier.verify({
+      provider: dto.provider,
+      idToken: dto.idToken,
+      code: dto.code,
+    });
     const user = await this.loginOrCreate(identity);
     const accessToken = await this.issueJwt(user);
     return { accessToken, user };

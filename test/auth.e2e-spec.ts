@@ -76,10 +76,16 @@ describe('Auth (e2e)', () => {
       expect(await userCount()).toBe(2);
     });
 
-    it('rejects a missing idToken with 400', () =>
+    it('rejects a request with neither idToken nor code (400)', () =>
       request(app.getHttpServer())
         .post('/auth/login')
         .send({ provider: 'google' })
+        .expect(400));
+
+    it('rejects a request with both idToken and code (400)', () =>
+      request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ provider: 'google', idToken: 'dev-teacher-1', code: 'abc' })
         .expect(400));
 
     it('rejects an unknown provider with 400', () =>

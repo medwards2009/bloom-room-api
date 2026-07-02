@@ -26,6 +26,15 @@ export class DevTokenVerifier implements TokenVerifier {
       return this.real.verify(provider, idToken);
     }
 
-    return { provider, subject: idToken, email: null };
+    // Dev subject format: "subject" or "subject|First|Last". Names default to a
+    // placeholder so the NOT NULL name columns are satisfied without a real token.
+    const [subject, firstName, lastName] = idToken.split('|');
+    return {
+      provider,
+      subject,
+      email: null,
+      firstName: firstName || 'Dev',
+      lastName: lastName || subject,
+    };
   }
 }

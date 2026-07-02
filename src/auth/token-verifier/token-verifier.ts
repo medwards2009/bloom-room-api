@@ -5,6 +5,8 @@ export interface VerifiedIdentity {
   provider: AuthProvider;
   subject: string;
   email: string | null;
+  firstName: string;
+  lastName: string;
 }
 
 /**

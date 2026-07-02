@@ -63,9 +63,16 @@ export class AuthService {
 
     const existing = await this.users.findOne({ where });
     if (existing) {
-      // Keep the login email fresh if the provider's changed.
-      if (identity.email && existing.email !== identity.email) {
-        existing.email = identity.email;
+      // Keep identity fields fresh if the provider's changed them.
+      const email = identity.email ?? existing.email;
+      if (
+        existing.email !== email ||
+        existing.firstName !== identity.firstName ||
+        existing.lastName !== identity.lastName
+      ) {
+        existing.email = email;
+        existing.firstName = identity.firstName;
+        existing.lastName = identity.lastName;
         await this.users.save(existing);
       }
       return existing;
@@ -75,6 +82,8 @@ export class AuthService {
     const user = this.users.create({
       userType: UserType.TEACHER,
       email: identity.email,
+      firstName: identity.firstName,
+      lastName: identity.lastName,
       authProvider: identity.provider,
       authSubject: identity.subject,
     });

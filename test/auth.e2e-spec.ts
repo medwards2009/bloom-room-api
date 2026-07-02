@@ -45,8 +45,19 @@ describe('Auth (e2e)', () => {
         userType: 'teacher',
         authProvider: 'google',
         authSubject: 'dev-teacher-1',
+        firstName: 'Dev',
+        lastName: 'dev-teacher-1',
       });
       expect(await userCount()).toBe(1);
+    });
+
+    it('captures a name from the dev token override "subject|First|Last"', async () => {
+      const res = await login('dev-teacher-1|Jane|Doe').expect(200);
+      expect(res.body.user).toMatchObject({
+        authSubject: 'dev-teacher-1',
+        firstName: 'Jane',
+        lastName: 'Doe',
+      });
     });
 
     it('is idempotent for the same subject (find-or-create, no duplicate)', async () => {

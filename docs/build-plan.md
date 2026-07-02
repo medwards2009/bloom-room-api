@@ -59,10 +59,13 @@ entered the picture (a teacher owns classes; an admin oversees a school), so we
 split them:
 
 - **`user`** — the identity table. One row per login. Holds OAuth fields
-  (`auth_provider`, `auth_subject`), `email`, and a `user_type` enum
-  (`teacher` | `administrator`). **Login resolves against this table.**
+  (`auth_provider`, `auth_subject`), `email`, `first_name` / `last_name`, and a
+  `user_type` enum (`teacher` | `administrator`). **Login resolves against this
+  table.** Name lives here (not on the profiles) because it's identity data — the
+  same regardless of role — and arrives from the auth provider alongside email.
 - **`teacher`** / **`administrator`** — profile tables. Each has a `user_id` FK
-  pointing *back up* to `user`. Role-specific fields live here, not on `user`.
+  pointing *back up* to `user`. Genuinely role-specific fields live here (a
+  teacher's `school_id` + work `school_email`, an admin's `school_id`) — not name.
 
 Direction matters: `user` is the parent; profiles point to it via `user_id`
 (identity-first, the conventional shape — and it lets the audit log reference

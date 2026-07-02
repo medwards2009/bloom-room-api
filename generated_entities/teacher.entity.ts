@@ -35,13 +35,8 @@ export class Teacher {
   @JoinColumn({ name: 'schoolId' })
   school: School;
 
-  @Column({ type: 'varchar' })
-  firstName: string;
-
-  @Column({ type: 'varchar' })
-  lastName: string;
-
-  // Distinct from the login email on User; this is the teacher's work email.
+  // Name lives on User (identity). This is the teacher's work email, distinct
+  // from the login email on User.
   @Column({ type: 'varchar', nullable: true })
   schoolEmail: string | null;
 

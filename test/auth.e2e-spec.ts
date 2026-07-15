@@ -1,14 +1,33 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import type { App } from 'supertest/types';
 import { DataSource } from 'typeorm';
 import { createTestApp } from './utils/e2e';
+
+/** The JSON shape AuthService returns for a user (dates serialize to strings). */
+interface UserBody {
+  id: string;
+  userType: string;
+  authProvider: string;
+  authSubject: string;
+  firstName: string;
+  lastName: string;
+}
+
+interface LoginBody {
+  accessToken: string;
+  user: UserBody;
+}
 
 describe('Auth (e2e)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
 
+  // getHttpServer() is typed `any`; narrow it once here rather than at each call.
+  const server = () => app.getHttpServer() as App;
+
   const login = (idToken: string, provider = 'google') =>
-    request(app.getHttpServer()).post('/auth/login').send({ provider, idToken });
+    request(server()).post('/auth/login').send({ provider, idToken });
 
   const userCount = async (): Promise<number> => {
     const rows: Array<{ count: number }> = await dataSource.query(
@@ -31,7 +50,7 @@ describe('Auth (e2e)', () => {
 
   describe('GET /health', () => {
     it('is public and reports the database up', async () => {
-      const res = await request(app.getHttpServer()).get('/health').expect(200);
+      const res = await request(server()).get('/health').expect(200);
       expect(res.body).toMatchObject({ status: 'ok', database: 'up' });
     });
   });
@@ -39,9 +58,10 @@ describe('Auth (e2e)', () => {
   describe('POST /auth/login', () => {
     it('creates a new user as a teacher and returns a token', async () => {
       const res = await login('dev-teacher-1').expect(200);
+      const body = res.body as LoginBody;
 
-      expect(res.body.accessToken).toEqual(expect.any(String));
-      expect(res.body.user).toMatchObject({
+      expect(body.accessToken).toEqual(expect.any(String));
+      expect(body.user).toMatchObject({
         userType: 'teacher',
         authProvider: 'google',
         authSubject: 'dev-teacher-1',
@@ -53,7 +73,7 @@ describe('Auth (e2e)', () => {
 
     it('captures a name from the dev token override "subject|First|Last"', async () => {
       const res = await login('dev-teacher-1|Jane|Doe').expect(200);
-      expect(res.body.user).toMatchObject({
+      expect((res.body as LoginBody).user).toMatchObject({
         authSubject: 'dev-teacher-1',
         firstName: 'Jane',
         lastName: 'Doe',
@@ -64,7 +84,9 @@ describe('Auth (e2e)', () => {
       const first = await login('dev-teacher-1').expect(200);
       const second = await login('dev-teacher-1').expect(200);
 
-      expect(second.body.user.id).toBe(first.body.user.id);
+      expect((second.body as LoginBody).user.id).toBe(
+        (first.body as LoginBody).user.id,
+      );
       expect(await userCount()).toBe(1);
     });
 
@@ -72,24 +94,26 @@ describe('Auth (e2e)', () => {
       const a = await login('dev-teacher-1').expect(200);
       const b = await login('dev-teacher-2').expect(200);
 
-      expect(b.body.user.id).not.toBe(a.body.user.id);
+      expect((b.body as LoginBody).user.id).not.toBe(
+        (a.body as LoginBody).user.id,
+      );
       expect(await userCount()).toBe(2);
     });
 
     it('rejects a request with neither idToken nor code (400)', () =>
-      request(app.getHttpServer())
+      request(server())
         .post('/auth/login')
         .send({ provider: 'google' })
         .expect(400));
 
     it('rejects a request with both idToken and code (400)', () =>
-      request(app.getHttpServer())
+      request(server())
         .post('/auth/login')
         .send({ provider: 'google', idToken: 'dev-teacher-1', code: 'abc' })
         .expect(400));
 
     it('rejects an unknown provider with 400', () =>
-      request(app.getHttpServer())
+      request(server())
         .post('/auth/login')
         .send({ provider: 'myspace', idToken: 'x' })
         .expect(400));
@@ -97,22 +121,24 @@ describe('Auth (e2e)', () => {
 
   describe('GET /me', () => {
     it('returns the current user with a valid token', async () => {
-      const { body } = await login('dev-teacher-1').expect(200);
+      const loginRes = await login('dev-teacher-1').expect(200);
+      const body = loginRes.body as LoginBody;
 
-      const res = await request(app.getHttpServer())
+      const res = await request(server())
         .get('/me')
         .set('Authorization', `Bearer ${body.accessToken}`)
         .expect(200);
+      const me = res.body as UserBody;
 
-      expect(res.body.id).toBe(body.user.id);
-      expect(res.body.authSubject).toBe('dev-teacher-1');
+      expect(me.id).toBe(body.user.id);
+      expect(me.authSubject).toBe('dev-teacher-1');
     });
 
     it('rejects a request with no token', () =>
-      request(app.getHttpServer()).get('/me').expect(401));
+      request(server()).get('/me').expect(401));
 
     it('rejects a request with a malformed token', () =>
-      request(app.getHttpServer())
+      request(server())
         .get('/me')
         .set('Authorization', 'Bearer not.a.real.token')
         .expect(401));

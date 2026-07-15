@@ -13,7 +13,8 @@ export class DevTokenVerifier implements TokenVerifier {
   constructor(private readonly real: TokenVerifier | null) {}
 
   async verify(input: VerifyInput): Promise<VerifiedIdentity> {
-    const looksReal = Boolean(input.code) || Boolean(input.idToken?.includes('.'));
+    const looksReal =
+      Boolean(input.code) || Boolean(input.idToken?.includes('.'));
     if (looksReal) {
       if (!this.real) {
         throw new UnauthorizedException(

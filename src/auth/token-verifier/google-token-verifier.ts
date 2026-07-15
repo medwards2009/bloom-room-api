@@ -1,5 +1,5 @@
 import { UnauthorizedException } from '@nestjs/common';
-import { OAuth2Client } from 'google-auth-library';
+import { OAuth2Client, TokenPayload } from 'google-auth-library';
 import { AuthProvider } from '../../common/enums';
 import { TokenVerifier, VerifiedIdentity, VerifyInput } from './token-verifier';
 
@@ -63,17 +63,21 @@ export class GoogleTokenVerifier implements TokenVerifier {
       const { tokens } = await client.getToken(code);
       idToken = tokens.id_token;
     } catch {
-      throw new UnauthorizedException('Failed to exchange Google authorization code');
+      throw new UnauthorizedException(
+        'Failed to exchange Google authorization code',
+      );
     }
 
     if (!idToken) {
-      throw new UnauthorizedException('Google code exchange returned no id-token');
+      throw new UnauthorizedException(
+        'Google code exchange returned no id-token',
+      );
     }
     return idToken;
   }
 
   private async verifyIdToken(idToken: string): Promise<VerifiedIdentity> {
-    let payload;
+    let payload: TokenPayload | undefined;
     try {
       const ticket = await this.verifyClient.verifyIdToken({
         idToken,
@@ -90,7 +94,9 @@ export class GoogleTokenVerifier implements TokenVerifier {
 
     // given_name / family_name are standard profile claims on a Google id-token.
     if (!payload.given_name || !payload.family_name) {
-      throw new UnauthorizedException('Google token did not include a full name');
+      throw new UnauthorizedException(
+        'Google token did not include a full name',
+      );
     }
 
     return {

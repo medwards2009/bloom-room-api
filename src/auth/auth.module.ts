@@ -41,7 +41,9 @@ function parseClientIds(raw: string | undefined): string[] {
       provide: TOKEN_VERIFIER,
       inject: [ConfigService],
       useFactory: (config: ConfigService): TokenVerifier => {
-        const clientIds = parseClientIds(config.get<string>('GOOGLE_CLIENT_IDS'));
+        const clientIds = parseClientIds(
+          config.get<string>('GOOGLE_CLIENT_IDS'),
+        );
 
         // Auth-code exchange needs a specific web client id + secret pair. When
         // both are set, the web id must be in the audience allow-list.

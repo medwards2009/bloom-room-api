@@ -8,11 +8,15 @@
 ## Progress
 
 - [x] **Chunk 1 — Local dev setup** (committed `9a2a11d`)
-- [~] **Chunk 2 — Identity table + config validation** (in progress; branch `chunk-2`)
-  - [x] Joi config validation (fail-fast on bad env; `AUTH_DEV_MODE` escape hatch)
-  - [x] `User` identity entity + enums (replaces the old `teacher` entity)
-  - [ ] commit
-- [ ] **Chunk 3 — Auth** (provider id-token → API JWT + global guard + `/me`)
+- [x] **Chunk 2 — Identity table + config validation** (merged, PR #2)
+- [~] **Chunk 3 — Auth** (provider id-token → API JWT + global guard + `/me`)
+  (built on branch `chunk-3`; verified locally, commit/PR pending)
+  - [x] `TokenVerifier` (real Google + dev verifier with JWT-vs-raw-subject routing)
+  - [x] `AuthService` (verify → find-or-create teacher → issue JWT)
+  - [x] `POST /auth/login` (`@Public`), global `JwtAuthGuard`, `@Public`/`@CurrentUser`
+  - [x] `GET /me`; CORS enabled; `/health` marked `@Public`
+  - [x] e2e tests (`test/auth.e2e-spec.ts`) against an isolated `bloom_room_test` DB
+  - [ ] commit + PR
 - [ ] **Chunk 4 — School + role profiles** (`Teacher`/`Administrator`, onboarding)
 - [ ] **Chunk 5 — Classes CRUD** (teacher-scoped)
 - [ ] **Chunk 6 — Students + Enrollment** (school-scoped students; M2M enrollment)
@@ -55,10 +59,13 @@ entered the picture (a teacher owns classes; an admin oversees a school), so we
 split them:
 
 - **`user`** — the identity table. One row per login. Holds OAuth fields
-  (`auth_provider`, `auth_subject`), `email`, and a `user_type` enum
-  (`teacher` | `administrator`). **Login resolves against this table.**
+  (`auth_provider`, `auth_subject`), `email`, `first_name` / `last_name`, and a
+  `user_type` enum (`teacher` | `administrator`). **Login resolves against this
+  table.** Name lives here (not on the profiles) because it's identity data — the
+  same regardless of role — and arrives from the auth provider alongside email.
 - **`teacher`** / **`administrator`** — profile tables. Each has a `user_id` FK
-  pointing *back up* to `user`. Role-specific fields live here, not on `user`.
+  pointing *back up* to `user`. Genuinely role-specific fields live here (a
+  teacher's `school_id` + work `school_email`, an admin's `school_id`) — not name.
 
 Direction matters: `user` is the parent; profiles point to it via `user_id`
 (identity-first, the conventional shape — and it lets the audit log reference
@@ -273,3 +280,7 @@ Switch `synchronize: false`, generate the initial migration from the entities, a
 `just deps-start`, `just dev`, exercise new endpoints with curl using a Bearer token
 from `/auth/login`, confirm rows via `just db-shell`. Restart the Postgres container
 to confirm volume persistence. Create a second user to confirm no cross-tenant leaks.
+
+**Convention:** the concrete checks live in `docs/smoke-tests.md` as a living,
+copy-pasteable checklist grouped by chunk. **Every chunk that adds or changes an
+endpoint must append/update its cases there** as part of the work.

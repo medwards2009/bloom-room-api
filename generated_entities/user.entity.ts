@@ -24,6 +24,14 @@ export class User {
   @Column({ type: 'varchar', nullable: true })
   email: string | null;
 
+  // Name is identity data (same regardless of role) and comes from the auth
+  // provider alongside email, so it lives here rather than on the role profiles.
+  @Column({ type: 'varchar' })
+  firstName: string;
+
+  @Column({ type: 'varchar' })
+  lastName: string;
+
   @Column({ type: 'enum', enum: AuthProvider })
   authProvider: AuthProvider;
 

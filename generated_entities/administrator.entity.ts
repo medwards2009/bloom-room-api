@@ -33,12 +33,7 @@ export class Administrator {
   @JoinColumn({ name: 'schoolId' })
   school: School;
 
-  @Column({ type: 'varchar' })
-  firstName: string;
-
-  @Column({ type: 'varchar' })
-  lastName: string;
-
+  // Name lives on User (identity), not on the role profile.
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }

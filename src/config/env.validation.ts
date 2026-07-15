@@ -32,4 +32,16 @@ export const envValidationSchema = Joi.object({
     then: Joi.string().allow('').optional(),
     otherwise: Joi.string().required(),
   }),
+  // Needed to exchange the web app's authorization code for tokens. Required in
+  // real environments; optional in dev (curl uses raw-subject id-tokens).
+  GOOGLE_WEB_CLIENT_ID: Joi.string().when('AUTH_DEV_MODE', {
+    is: true,
+    then: Joi.string().allow('').optional(),
+    otherwise: Joi.string().required(),
+  }),
+  GOOGLE_CLIENT_SECRET: Joi.string().when('AUTH_DEV_MODE', {
+    is: true,
+    then: Joi.string().allow('').optional(),
+    otherwise: Joi.string().required(),
+  }),
 });

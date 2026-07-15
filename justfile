@@ -40,9 +40,9 @@ lint:
 format:
     pnpm format
 
-# Run unit tests
-test:
-    pnpm test
+# Run unit tests (commented out until unit tests are added)
+# test:
+#     pnpm test
 
 # Run e2e tests (needs Postgres up; uses an isolated bloom_room_test database)
 test-e2e:

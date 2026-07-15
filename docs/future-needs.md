@@ -20,6 +20,27 @@ token-version / blocklist mechanism (e.g. a `token_version` column on `user`, bu
 to revoke). Decide the approach when the product actually needs logout or long-lived
 sign-in.
 
+## Testing
+
+**Cover `GoogleTokenVerifier` directly.** The e2e suite runs with `AUTH_DEV_MODE=true`
+(`.env.test`), so every case goes through `DevTokenVerifier` and the dot-less dev
+subjects never reach the real verifier. That leaves the most security-sensitive file
+in the auth chunk with no automated coverage: the audience check against
+`GOOGLE_CLIENT_IDS`, the auth-code `exchangeCode` path, the `payload.sub` guard, and
+the missing-name rejection are all unexercised. A `.spec.ts` injecting a fake
+`OAuth2Client` would cover them without network — worth doing before we depend on
+Google's payload shape any harder. (Would also give `just test` a reason to exist
+again; the recipe is commented out in the justfile until then.)
+
+**Derive the e2e DB connection from the app's config.** `test/utils/e2e.ts` builds its
+admin connection from raw `process.env` with its own defaults, and takes the test DB
+name from `TEST_DB_NAME ?? 'bloom_room_test'` — while the app under test gets its
+connection from `.env.test` via Joi. Two sources of truth: change `DB_NAME` in
+`.env.test` and `ensureTestDatabase()` creates the wrong database, and a stray `DB_*`
+exported in a developer's shell would be honoured by the harness but overridden by
+`.env.test` in the app (the 28P01 shell-leak class of bug). Read both from the same
+validated config.
+
 ## Deployment / secrets
 
 **Provision real secrets in the deploy namespace.** Config today comes from a local,

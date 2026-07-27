@@ -1,2 +1,4 @@
 allowBuilds:
+  # Analytics postinstall pulled in by @nestjs/swagger; nothing needs it to run.
+  '@scarf/scarf': false
   unrs-resolver: true

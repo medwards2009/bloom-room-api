@@ -1,4 +1,13 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+  "exclude": [
+    "node_modules",
+    "test",
+    "dist",
+    "**/*spec.ts",
+    // Reference-only scaffolding for later chunks; nothing in src imports it.
+    // Compiling it makes tsc root the output at ./ and emit dist/src/main.js,
+    // which breaks `node dist/main`.
+    "generated_entities"
+  ]
 }

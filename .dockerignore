@@ -1,0 +1,27 @@
+# Env files must NEVER enter the image. @nestjs/config gives a .env file
+# precedence over real environment variables, so a stray .env baked into the
+# image would silently override the ConfigMap/Secret in the cluster — shipping
+# dev credentials and AUTH_DEV_MODE=true to production.
+.env
+.env.*
+!.env.example
+
+node_modules
+dist
+coverage
+
+.git
+.gitignore
+.github
+
+# Not part of the runtime image
+test
+docs
+generated_entities
+justfile
+docker-compose.yml
+README.md
+*.md
+.vscode
+.idea
+.DS_Store

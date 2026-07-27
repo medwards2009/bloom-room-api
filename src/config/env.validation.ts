@@ -20,6 +20,12 @@ export const envValidationSchema = Joi.object({
   DB_PASSWORD: Joi.string().default('secret'),
   DB_NAME: Joi.string().default('bloom_room_dev'),
 
+  // Comma-separated allow-list of browser origins for CORS. Optional: native
+  // mobile clients don't need it, and dev mode reflects any origin when it's
+  // unset. A real environment that serves a browser client must set it —
+  // unset means cross-origin requests are refused rather than reflected.
+  CORS_ORIGINS: Joi.string().allow('').optional(),
+
   AUTH_DEV_MODE: Joi.boolean().default(false),
   JWT_SECRET: Joi.string().when('AUTH_DEV_MODE', {
     is: true,

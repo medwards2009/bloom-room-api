@@ -54,3 +54,39 @@ TOKEN=$(curl -s -X POST $BASE/auth/login \
 ### Cross-tenant / persistence (run periodically)
 - Log in as a second subject (`dev-teacher-2`) → distinct `user.id`; first user's data never leaks.
 - Restart the Postgres container (`just deps-stop && just deps-start`) → users still present (volume persistence).
+
+---
+
+## Chunk 5 — Classes CRUD (teacher-scoped)
+
+Assumes `$BASE` and `$TOKEN` from Setup (a `dev-teacher-1` token). A teacher
+profile is created lazily on the first `/classes` call — no onboarding needed.
+
+```bash
+# 5.1 Create a class (201). teacherId is derived from auth, never the body.
+CID=$(curl -s -X POST $BASE/classes \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"name":"Sunflower Room","gradeLevel":"Grade 2","subject":"Rm 104","period":"Mon-Thu · 9:30 AM","color":"sage"}' \
+  | python3 -c "import sys,json;print(json.load(sys.stdin)['id'])")
+echo "created class $CID"
+```
+
+| # | Check | Command | Expect |
+|---|-------|---------|--------|
+| 5.1 | Create class | (above) | `201`, body has `id`, `teacherId`, `color":"sage"` |
+| 5.2 | Color defaults to coral | `curl -s -X POST $BASE/classes -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"subject":"Rm 104","period":"Daily"}'` | `201`; `color":"coral"`, `name`/`gradeLevel` null |
+| 5.3 | teacherId in body ignored | add `"teacherId":"00000000-0000-0000-0000-000000000000"` to a create body | `201`; returned `teacherId` is **not** the supplied uuid |
+| 5.4 | Missing required field | `curl -s -o /dev/null -w '%{http_code}' -X POST $BASE/classes -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"subject":"Rm 104"}'` | `400` (no `period`) |
+| 5.5 | Invalid color | create body with `"color":"turquoise"` | `400` |
+| 5.6 | List my classes | `curl -s $BASE/classes -H "Authorization: Bearer $TOKEN"` | `200`, array of only this teacher's classes |
+| 5.7 | Get one | `curl -s $BASE/classes/$CID -H "Authorization: Bearer $TOKEN"` | `200`, that class |
+| 5.8 | Get non-uuid id | `curl -s -o /dev/null -w '%{http_code}' $BASE/classes/not-a-uuid -H "Authorization: Bearer $TOKEN"` | `400` |
+| 5.9 | Patch subset | `curl -s -X PATCH $BASE/classes/$CID -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"name":"Renamed","color":"plum"}'` | `200`; `name`/`color` updated, `subject` unchanged |
+| 5.10 | Delete | `curl -s -o /dev/null -w '%{http_code}' -X DELETE $BASE/classes/$CID -H "Authorization: Bearer $TOKEN"` | `204`; a follow-up GET returns `404` |
+| 5.11 | Auth required | `curl -s -o /dev/null -w '%{http_code}' $BASE/classes` | `401` |
+
+### Cross-tenant (the 404-not-403 rule)
+Get a second token `TOKEN2=$(... idToken:"dev-teacher-2" ...)`, then with a `$CID`
+owned by `dev-teacher-1`:
+- `GET /classes/$CID`, `PATCH /classes/$CID`, `DELETE /classes/$CID` as `TOKEN2` → **404** (never 403, so existence isn't leaked).
+- `GET /classes` as `TOKEN2` → does not include `dev-teacher-1`'s classes.

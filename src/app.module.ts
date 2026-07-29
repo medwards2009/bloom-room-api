@@ -3,8 +3,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { AuthModule } from './auth/auth.module';
+import { ClassModule } from './class/class.module';
 import { envValidationSchema } from './config/env.validation';
 import { HealthController } from './health/health.controller';
+import { TeacherModule } from './teacher/teacher.module';
 import { UserModule } from './user/user.module';
 
 @Module({
@@ -34,6 +36,8 @@ import { UserModule } from './user/user.module';
     }),
     UserModule,
     AuthModule,
+    TeacherModule,
+    ClassModule,
   ],
   controllers: [HealthController],
 })

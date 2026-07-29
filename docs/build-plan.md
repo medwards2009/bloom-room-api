@@ -18,7 +18,14 @@
   - [x] e2e tests (`test/auth.e2e-spec.ts`) against an isolated `bloom_room_test` DB
   - [ ] commit + PR
 - [ ] **Chunk 4 — School + role profiles** (`Teacher`/`Administrator`, onboarding)
-- [ ] **Chunk 5 — Classes CRUD** (teacher-scoped)
+- [~] **Chunk 5 — Classes CRUD** (teacher-scoped)
+  (built on branch `feat/classes-list-and-create`; PR open)
+  - [x] `ClassColor` enum in `common/enums.ts`; `Class` entity (`classes` table)
+  - [x] Minimal `Teacher` profile (nullable `schoolId`) + `TeacherService`
+        find-or-create by user id (full School/onboarding still deferred to Chunk 4)
+  - [x] `ClassModule` + service + controller; `POST/GET/GET:id/PATCH/DELETE
+        /classes`, teacher-scoped, 404 (not 403) if not theirs
+  - [x] e2e tests (`test/classes.e2e-spec.ts`); smoke-test cases appended
 - [ ] **Chunk 6 — Students + Enrollment** (school-scoped students; M2M enrollment)
 - [ ] **Chunk 7 — Behaviors** (per-student goals)
 - [ ] **Chunk 8 — Behavior entries** (daily yes/no)
@@ -224,6 +231,16 @@ manages a school). `@CurrentUser()` resolves to the role profile for scoping.
 `Class` entity + module/service/controller + DTOs. `POST/GET/GET:id/PATCH/DELETE
 /classes`, scoped to the authenticated teacher profile; 404 if not theirs.
 **Commit:** `feat: class crud scoped to authenticated teacher`
+
+**Interim teacher-scoping (built ahead of Chunk 4):** Chunk 4 (School + profiles +
+onboarding) isn't built yet, so this chunk ships a **minimal `Teacher` profile**
+(`user_id` unique FK, `school_id` **nullable**, no `School` relation) that
+`TeacherService.findOrCreateByUserId` mints **lazily** on the first class
+operation. Classes hang off `teacher_id` (the contract's shape), never `user_id`.
+**Chunk 4 must expand this same entity** — make `school_id` a required FK to
+`schools` (`onDelete: 'RESTRICT'`), add `school_email` + the `User.teacher`
+inverse relation, and move profile creation into a real onboarding flow — rather
+than introduce a second teacher table.
 
 ### Chunk 6 — Students + Enrollment
 `Student` entity (school-scoped) + `Enrollment` join (unique `class_id,student_id`).

@@ -25,3 +25,15 @@ export enum AuditAction {
   VIEW = 'view',
   GENERATE_REPORT = 'generate_report',
 }
+
+// Class accent colour keys (shared contract with the web/mobile apps, which map
+// each key to an accent + soft background from their own theme tokens). The API
+// only stores/validates the key string. Stored as varchar, defaulting to `coral`.
+export enum ClassColor {
+  CORAL = 'coral',
+  HONEY = 'honey',
+  SAGE = 'sage',
+  CLAY = 'clay',
+  SKY = 'sky',
+  PLUM = 'plum',
+}

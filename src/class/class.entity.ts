@@ -1,0 +1,57 @@
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { ClassColor } from '../common/enums';
+import { Teacher } from '../teacher/teacher.entity';
+
+/**
+ * A class taught by a teacher. Named `Class` but referenced as `klass` in
+ * relation callbacks (`class` is a reserved word); the table stays `classes`.
+ *
+ * The `enrollments` and `behaviorEntries` inverse relations are deferred to
+ * Chunks 6 and 8 respectively (those entities don't exist yet), so the design's
+ * student count is treated as 0 for this iteration.
+ */
+@Entity('classes')
+export class Class {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'uuid' })
+  teacherId: string;
+
+  @ManyToOne(() => Teacher, (klass) => klass.classes, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'teacherId' })
+  teacher: Teacher;
+
+  // "Class name", e.g. "Sunflower Room". Optional in the design.
+  @Column({ type: 'varchar', nullable: true })
+  name: string | null;
+
+  // "Grade level", e.g. "Grade 2". Optional in the design.
+  @Column({ type: 'varchar', nullable: true })
+  gradeLevel: string | null;
+
+  // "Room / Subject", e.g. "Rm 104". Required.
+  @Column({ type: 'varchar' })
+  subject: string;
+
+  // "Meeting schedule", e.g. "Mon-Thu · 9:30 AM". String so it holds arbitrary
+  // schedule labels. Required.
+  @Column({ type: 'varchar' })
+  period: string;
+
+  // Accent colour key (see ClassColor). Stored as varchar, defaults to `coral`.
+  @Column({ type: 'varchar', default: ClassColor.CORAL })
+  color: ClassColor;
+
+  @CreateDateColumn({ type: 'timestamptz' })
+  createdAt: Date;
+}

@@ -48,9 +48,18 @@ format:
 # test:
 #     pnpm test
 
-# Run e2e tests (needs Postgres up; uses an isolated bloom_room_test database)
+# Run e2e tests (needs Postgres up; uses an isolated bloom_room_test database).
+# Includes swagger.e2e-spec.ts, which fails if the API docs stop being served or
+# drift behind the routes — see `just check`.
 test-e2e:
     pnpm test:e2e
+
+# Everything that must pass before pushing: lint, compile, and the e2e suite.
+# `build` matters on its own — the Swagger CLI plugin only runs here, so a DTO
+# that breaks introspection surfaces at build time, not in the tests.
+check: lint
+    pnpm build
+    just test-e2e
 
 # --- Docker -------------------------------------------------------------------
 # This laptop is arm64 and the server is x86_64, so `docker-build` is for local

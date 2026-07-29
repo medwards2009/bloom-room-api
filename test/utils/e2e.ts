@@ -1,7 +1,9 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
+import { OpenAPIObject } from '@nestjs/swagger';
 import { Test } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../../src/app.module';
+import { configureApp } from '../../src/setup-app';
 
 const TEST_DB = process.env.TEST_DB_NAME ?? 'bloom_room_test';
 
@@ -39,13 +41,16 @@ export async function ensureTestDatabase(): Promise<void> {
 }
 
 /**
- * Boot the full app against the isolated test database with AUTH_DEV_MODE on,
- * mirroring main.ts's global ValidationPipe. Returns the app plus its DataSource
- * so specs can truncate/inspect tables.
+ * Boot the full app against the isolated test database with AUTH_DEV_MODE on.
+ * Request wiring comes from the same configureApp() the real server uses, so a
+ * change to main.ts's setup can't silently skip the suite. Returns the app, its
+ * DataSource (so specs can truncate/inspect tables) and the generated OpenAPI
+ * document.
  */
 export async function createTestApp(): Promise<{
   app: INestApplication;
   dataSource: DataSource;
+  document: OpenAPIObject;
 }> {
   // Config (incl. DB_NAME=bloom_room_test) comes from .env.test, which the app
   // loads because jest sets NODE_ENV=test. We just make sure that DB exists first.
@@ -56,8 +61,8 @@ export async function createTestApp(): Promise<{
   }).compile();
 
   const app = moduleRef.createNestApplication();
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  const document = configureApp(app);
   await app.init();
 
-  return { app, dataSource: app.get(DataSource) };
+  return { app, dataSource: app.get(DataSource), document };
 }

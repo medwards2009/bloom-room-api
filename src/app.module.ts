@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { ClassModule } from './class/class.module';
 import { envValidationSchema } from './config/env.validation';
 import { HealthController } from './health/health.controller';
+import { StudentModule } from './student/student.module';
 import { TeacherModule } from './teacher/teacher.module';
 import { UserModule } from './user/user.module';
 
@@ -38,6 +39,7 @@ import { UserModule } from './user/user.module';
     AuthModule,
     TeacherModule,
     ClassModule,
+    StudentModule,
   ],
   controllers: [HealthController],
 })

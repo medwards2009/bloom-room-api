@@ -90,3 +90,43 @@ Get a second token `TOKEN2=$(... idToken:"dev-teacher-2" ...)`, then with a `$CI
 owned by `dev-teacher-1`:
 - `GET /classes/$CID`, `PATCH /classes/$CID`, `DELETE /classes/$CID` as `TOKEN2` → **404** (never 403, so existence isn't leaked).
 - `GET /classes` as `TOKEN2` → does not include `dev-teacher-1`'s classes.
+
+---
+
+## Chunk 6 — Students + Enrollment (teacher-scoped)
+
+Assumes `$BASE` and `$TOKEN` from Setup, plus a class id `$CID` you own (create one
+via 5.1). Students are **teacher-owned**; adding a student both creates it on your
+roster and enrolls it in the class, in one call. Unenroll removes the enrollment
+only — the student record survives.
+
+```bash
+# 6.1 Add a student to a class (201) → creates + enrolls. teacherId is from auth.
+SID=$(curl -s -X POST $BASE/classes/$CID/students \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"firstName":"Amara","lastName":"Okafor"}' \
+  | python3 -c "import sys,json;print(json.load(sys.stdin)['id'])")
+echo "created + enrolled student $SID"
+```
+
+| # | Check | Command | Expect |
+|---|-------|---------|--------|
+| 6.1 | Add + enroll | (above) | `201`, body `{id,teacherId,firstName,lastName,createdAt}` (no `schoolId`) |
+| 6.2 | teacherId in body ignored | add `"teacherId":"00000000-0000-0000-0000-000000000000"` to a 6.1 body | `201`; returned `teacherId` is **not** the supplied uuid |
+| 6.3 | Blank names rejected | `curl -s -o /dev/null -w '%{http_code}' -X POST $BASE/classes/$CID/students -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"firstName":"   ","lastName":"Okafor"}'` | `400` |
+| 6.4 | Missing name rejected | body `{"firstName":"Amara"}` | `400` (no `lastName`) |
+| 6.5 | Roster list | `curl -s $BASE/classes/$CID/students -H "Authorization: Bearer $TOKEN"` | `200`, array incl. student `$SID` |
+| 6.6 | Student detail + class chips | `curl -s $BASE/students/$SID -H "Authorization: Bearer $TOKEN"` | `200`; body has `classes:[{id,name,gradeLevel,subject,period,color}]` incl. `$CID` |
+| 6.7 | Top-level roster | `curl -s $BASE/students -H "Authorization: Bearer $TOKEN"` | `200`, array of your students |
+| 6.8 | Unenroll (student survives) | `curl -s -o /dev/null -w '%{http_code}' -X DELETE $BASE/classes/$CID/students/$SID -H "Authorization: Bearer $TOKEN"` | `204`; roster (6.5) no longer lists `$SID`, but `GET /students/$SID` still `200` |
+| 6.9 | Unenroll when not enrolled | repeat 6.8 (already unenrolled), or a `$SID` in a different class | `404` |
+| 6.10 | Non-uuid ids | `curl -s -o /dev/null -w '%{http_code}' $BASE/classes/not-a-uuid/students -H "Authorization: Bearer $TOKEN"` | `400` |
+| 6.11 | Auth required | `curl -s -o /dev/null -w '%{http_code}' $BASE/students` | `401` |
+
+### Cross-tenant (the 404-not-403 rule)
+With `TOKEN2` = a `dev-teacher-2` token, a class `$CID` and student `$SID` owned by
+`dev-teacher-1`:
+- `POST /classes/$CID/students`, `GET /classes/$CID/students`,
+  `DELETE /classes/$CID/students/$SID` as `TOKEN2` → **404** (class isn't theirs).
+- `GET /students/$SID` as `TOKEN2` → **404** (student isn't theirs).
+- `GET /students` as `TOKEN2` → does not include `dev-teacher-1`'s students.

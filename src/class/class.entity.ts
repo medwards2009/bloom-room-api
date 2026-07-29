@@ -4,18 +4,19 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { ClassColor } from '../common/enums';
+import { Enrollment } from '../enrollment/enrollment.entity';
 import { Teacher } from '../teacher/teacher.entity';
 
 /**
  * A class taught by a teacher. Named `Class` but referenced as `klass` in
  * relation callbacks (`class` is a reserved word); the table stays `classes`.
  *
- * The `enrollments` and `behaviorEntries` inverse relations are deferred to
- * Chunks 6 and 8 respectively (those entities don't exist yet), so the design's
- * student count is treated as 0 for this iteration.
+ * The `enrollments` inverse relation is wired as of Chunk 6; `behaviorEntries`
+ * is still deferred to Chunk 8 (that entity doesn't exist yet).
  */
 @Entity('classes')
 export class Class {
@@ -51,6 +52,9 @@ export class Class {
   // Accent colour key (see ClassColor). Stored as varchar, defaults to `coral`.
   @Column({ type: 'varchar', default: ClassColor.CORAL })
   color: ClassColor;
+
+  @OneToMany(() => Enrollment, (enrollment) => enrollment.class)
+  enrollments: Enrollment[];
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

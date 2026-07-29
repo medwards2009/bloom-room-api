@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/user.entity';
 import { Class } from './class.entity';
@@ -20,6 +21,8 @@ import { UpdateClassDto } from './dto/update-class.dto';
  * Classes CRUD, scoped to the authenticated user's teacher profile. Classes that
  * aren't theirs return 404 (not 403). `teacherId` is always derived from auth.
  */
+@ApiTags('classes')
+@ApiBearerAuth()
 @Controller('classes')
 export class ClassController {
   constructor(private readonly classes: ClassService) {}

@@ -1,7 +1,7 @@
-import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { configureApp } from './setup-app';
 
 function parseOrigins(raw: string | undefined): string[] {
   return (raw ?? '')
@@ -14,7 +14,9 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
 
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  // Validation pipe + Swagger docs. Shared with the e2e test app so the suite
+  // exercises the same wiring the real server runs — see src/setup-app.ts.
+  configureApp(app);
 
   // Browser clients (bloom-room-web) call this API cross-origin. Native mobile
   // clients send no Origin header and are unaffected by any of this.

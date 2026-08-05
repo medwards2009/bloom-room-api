@@ -3,6 +3,7 @@ import request from 'supertest';
 import type { App } from 'supertest/types';
 import { DataSource } from 'typeorm';
 import { createTestApp } from './utils/e2e';
+import { Class } from '../src/class/class.entity';
 
 interface ClassBody {
   id: string;
@@ -280,6 +281,30 @@ describe('Classes (e2e)', () => {
         .delete(`/classes/${id}`)
         .set('Authorization', auth(t2))
         .expect(404);
+    });
+  });
+
+  describe('Class.teacher relation (regression)', () => {
+    // Guards the SnakeNamingStrategy @JoinColumn pitfall: if the join column is
+    // named 'teacherId' instead of the snake_case 'teacher_id', a duplicate
+    // always-null column is synchronized and the relation joins on the empty one,
+    // so `teacher` loads as null. This asserts the relation actually populates.
+    it('loads the teacher relation via the correct join column', async () => {
+      const token = await tokenFor('dev-teacher-1');
+      const created = await request(server())
+        .post('/classes')
+        .set('Authorization', auth(token))
+        .send({ subject: 'Rm 104', period: 'Daily' })
+        .expect(201);
+      const body = created.body as ClassBody;
+
+      const loaded = await dataSource
+        .getRepository(Class)
+        .findOne({ where: { id: body.id }, relations: { teacher: true } });
+
+      expect(loaded).not.toBeNull();
+      expect(loaded?.teacher).toBeTruthy();
+      expect(loaded?.teacher?.id).toBe(body.teacherId);
     });
   });
 });

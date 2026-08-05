@@ -29,7 +29,11 @@ export class Class {
   @ManyToOne(() => Teacher, (klass) => klass.classes, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'teacherId' })
+  // SnakeNamingStrategy passes an explicit JoinColumn name through verbatim, so
+  // it must be the snake_case column that `teacherId` above maps to — otherwise a
+  // duplicate, always-null `teacherId` column is synchronized and loading the
+  // `teacher` relation joins on the empty one.
+  @JoinColumn({ name: 'teacher_id' })
   teacher: Teacher;
 
   // "Class name", e.g. "Sunflower Room". Optional in the design.

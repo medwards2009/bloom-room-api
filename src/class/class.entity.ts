@@ -62,4 +62,12 @@ export class Class {
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
+
+  /**
+   * Number of students enrolled in this class. Not a persisted column — it is
+   * counted from the enrollment rows at read time (see ClassService), so it can
+   * never drift out of sync. Undefined on writes that don't load it (create sets
+   * it to 0 explicitly).
+   */
+  studentCount?: number;
 }

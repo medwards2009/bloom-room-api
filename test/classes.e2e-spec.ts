@@ -14,6 +14,7 @@ interface ClassBody {
   period: string;
   color: string;
   createdAt: string;
+  studentCount?: number;
 }
 
 interface LoginBody {
@@ -305,6 +306,51 @@ describe('Classes (e2e)', () => {
       expect(loaded).not.toBeNull();
       expect(loaded?.teacher).toBeTruthy();
       expect(loaded?.teacher?.id).toBe(body.teacherId);
+    });
+  });
+
+  describe('studentCount (enrollment reflection)', () => {
+    const addStudent = async (
+      token: string,
+      classId: string,
+      firstName: string,
+      lastName: string,
+    ): Promise<void> => {
+      await request(server())
+        .post(`/classes/${classId}/students`)
+        .set('Authorization', auth(token))
+        .send({ firstName, lastName })
+        .expect(201);
+    };
+
+    it('reports 0 for a new class and the live enrolled count after adds', async () => {
+      const token = await tokenFor('dev-teacher-1');
+      const created = await request(server())
+        .post('/classes')
+        .set('Authorization', auth(token))
+        .send({ subject: 'Rm 104', period: 'Daily' })
+        .expect(201);
+      const body = created.body as ClassBody;
+      // A brand-new class starts at 0.
+      expect(body.studentCount).toBe(0);
+
+      await addStudent(token, body.id, 'Amara', 'Okafor');
+      await addStudent(token, body.id, 'Leo', 'Martinez');
+
+      // GET /classes reflects the enrolled count (the class-card pill source).
+      const list = await request(server())
+        .get('/classes')
+        .set('Authorization', auth(token))
+        .expect(200);
+      const listed = (list.body as ClassBody[]).find((c) => c.id === body.id);
+      expect(listed?.studentCount).toBe(2);
+
+      // GET /classes/:id reflects it too.
+      const one = await request(server())
+        .get(`/classes/${body.id}`)
+        .set('Authorization', auth(token))
+        .expect(200);
+      expect((one.body as ClassBody).studentCount).toBe(2);
     });
   });
 });

@@ -4,18 +4,19 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { ClassColor } from '../common/enums';
+import { Enrollment } from '../enrollment/enrollment.entity';
 import { Teacher } from '../teacher/teacher.entity';
 
 /**
  * A class taught by a teacher. Named `Class` but referenced as `klass` in
  * relation callbacks (`class` is a reserved word); the table stays `classes`.
  *
- * The `enrollments` and `behaviorEntries` inverse relations are deferred to
- * Chunks 6 and 8 respectively (those entities don't exist yet), so the design's
- * student count is treated as 0 for this iteration.
+ * The `enrollments` inverse relation is wired as of Chunk 6; `behaviorEntries`
+ * is still deferred to Chunk 8 (that entity doesn't exist yet).
  */
 @Entity('classes')
 export class Class {
@@ -28,7 +29,11 @@ export class Class {
   @ManyToOne(() => Teacher, (klass) => klass.classes, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'teacherId' })
+  // SnakeNamingStrategy passes an explicit JoinColumn name through verbatim, so
+  // it must be the snake_case column that `teacherId` above maps to — otherwise a
+  // duplicate, always-null `teacherId` column is synchronized and loading the
+  // `teacher` relation joins on the empty one.
+  @JoinColumn({ name: 'teacher_id' })
   teacher: Teacher;
 
   // "Class name", e.g. "Sunflower Room". Optional in the design.
@@ -52,6 +57,17 @@ export class Class {
   @Column({ type: 'varchar', default: ClassColor.CORAL })
   color: ClassColor;
 
+  @OneToMany(() => Enrollment, (enrollment) => enrollment.class)
+  enrollments: Enrollment[];
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
+
+  /**
+   * Number of students enrolled in this class. Not a persisted column — it is
+   * counted from the enrollment rows at read time (see ClassService), so it can
+   * never drift out of sync. Undefined on writes that don't load it (create sets
+   * it to 0 explicitly).
+   */
+  studentCount?: number;
 }

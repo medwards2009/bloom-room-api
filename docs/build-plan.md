@@ -26,7 +26,18 @@
   - [x] `ClassModule` + service + controller; `POST/GET/GET:id/PATCH/DELETE
         /classes`, teacher-scoped, 404 (not 403) if not theirs
   - [x] e2e tests (`test/classes.e2e-spec.ts`); smoke-test cases appended
-- [ ] **Chunk 6 — Students + Enrollment** (school-scoped students; M2M enrollment)
+- [~] **Chunk 6 — Students + Enrollment** (teacher-first MVP: teacher-owned students; M2M enrollment)
+  (built on branch `feat/students-and-enrollment`; PR open)
+  - [x] `Student` entity (`students` table): teacher-owned (`teacherId` from auth),
+        `schoolId` **nullable** (School relation dropped, mirroring the Chunk 5
+        Teacher slice); `behaviors`/`behaviorEntries`/`reports` relations deferred
+  - [x] `Enrollment` entity (`enrollments` table): unique (`classId`, `studentId`),
+        CASCADE from Class and Student; `enrollments` inverse wired on both
+  - [x] `StudentModule` + service + 2 controllers. `POST /classes/:id/students`
+        (create-on-roster + enroll, one transaction), `GET /classes/:id/students`,
+        `DELETE /classes/:id/students/:studentId` (unenroll only), `GET /students/:id`
+        (+ class chips), `GET /students`. Teacher-scoped, 404 (not 403) if not theirs
+  - [x] e2e tests (`test/students.e2e-spec.ts`, incl. cross-tenant); smoke cases appended
 - [ ] **Chunk 7 — Behaviors** (per-student goals)
 - [ ] **Chunk 8 — Behavior entries** (daily yes/no)
 - [ ] **Chunk 9 — Reports** (computed jsonb snapshots)
@@ -243,11 +254,34 @@ inverse relation, and move profile creation into a real onboarding flow — rath
 than introduce a second teacher table.
 
 ### Chunk 6 — Students + Enrollment
-`Student` entity (school-scoped) + `Enrollment` join (unique `class_id,student_id`).
-`POST /classes/:id/students` (create-on-school + enroll),
-`DELETE /classes/:id/students/:studentId` (unenroll), `GET /classes/:id/students`.
-Teacher access via enrollment; admin access via school. **Commit:** `feat: students
-and class enrollment`
+`Student` entity + `Enrollment` join (unique `class_id,student_id`).
+`POST /classes/:id/students` (create-on-roster + enroll, one transaction),
+`GET /classes/:id/students`, `DELETE /classes/:id/students/:studentId` (unenroll),
+`GET /students/:id` (+ enrolled-class chips), `GET /students`.
+**Commit:** `feat: students and class enrollment`
+
+**Teacher-first pivot (as built):** the original plan scoped students to a
+`School` (`student.school_id`, teacher access *through* enrollment). This
+iteration is the **teacher-first MVP** — a teacher manages their own students
+standalone, no school/admin yet — so students are **owned by the teacher**
+(`teacher_id` from auth, `onDelete: 'CASCADE'`), mirroring the Chunk 5 Teacher
+slice: `school_id` is kept as a **nullable** column with no `School` relation,
+reserved for a later school-linkage effort. Ownership is direct
+(`student.teacher_id = my teacher id`) rather than via enrollment; every route
+returns **404 (not 403)** when a class/student isn't the caller's, so existence
+never leaks. Add-to-class creates the Student and its Enrollment in a single
+transaction. Unenroll deletes only the `enrollments` row, never the Student. The
+`behaviors`/`behaviorEntries`/`reports` inverse relations stay deferred to their
+chunks. `GET /students` (top-level roster) is included since it's a trivial
+teacher-scoped find, though the apps' "Students" nav stays inert this iteration.
+
+**Entity gotcha (fixed here):** with `SnakeNamingStrategy`, an explicit
+`@JoinColumn({ name: 'fooId' })` is passed through **verbatim** (no snake-casing),
+so pairing it with a snake-cased `@Column() fooId` silently creates a *second*,
+always-null `fooId` column and the relation joins on the empty one. Join columns
+here name the snake_case column (`class_id`, `student_id`, `teacher_id`) so they
+coincide with the FK column. (The Chunk 5 `Class.teacher` join column has the same
+latent duplicate, but it's harmless there because that relation is never loaded.)
 
 ### Chunk 7 — Behaviors (per-student goals)
 `Behavior` entity (`goal_type` default `yes_no`). `POST /students/:id/behaviors`,

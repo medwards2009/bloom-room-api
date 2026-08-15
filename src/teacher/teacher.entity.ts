@@ -9,6 +9,7 @@ import {
   Unique,
 } from 'typeorm';
 import { Class } from '../class/class.entity';
+import { Student } from '../student/student.entity';
 import { User } from '../user/user.entity';
 
 /**
@@ -44,6 +45,11 @@ export class Teacher {
 
   @OneToMany(() => Class, (klass) => klass.teacher)
   classes: Class[];
+
+  // Students owned by this teacher (teacher-first MVP; see Student entity). Added
+  // in Chunk 6.
+  @OneToMany(() => Student, (student) => student.teacher)
+  students: Student[];
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

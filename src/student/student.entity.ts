@@ -7,6 +7,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { Behavior } from '../behavior/behavior.entity';
 import { Enrollment } from '../enrollment/enrollment.entity';
 import { Teacher } from '../teacher/teacher.entity';
 
@@ -22,8 +23,9 @@ import { Teacher } from '../teacher/teacher.entity';
  *    `schoolId` column with no relation (the `School` entity doesn't exist yet);
  *  - a `teacherId` owner is added (set from auth, never the request body).
  *
- * The `behaviors`, `behaviorEntries` and `reports` inverse relations are deferred
- * to later chunks (those entities don't exist yet). Only `enrollments` is wired.
+ * The `behaviorEntries` and `reports` inverse relations are deferred to later
+ * chunks (those entities don't exist yet). `enrollments` (Chunk 6) and `behaviors`
+ * (Chunk 7) are wired.
  */
 @Entity('students')
 export class Student {
@@ -54,6 +56,9 @@ export class Student {
 
   @OneToMany(() => Enrollment, (enrollment) => enrollment.student)
   enrollments: Enrollment[];
+
+  @OneToMany(() => Behavior, (behavior) => behavior.student)
+  behaviors: Behavior[];
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

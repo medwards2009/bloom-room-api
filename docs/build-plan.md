@@ -26,7 +26,7 @@
   - [x] `ClassModule` + service + controller; `POST/GET/GET:id/PATCH/DELETE
         /classes`, teacher-scoped, 404 (not 403) if not theirs
   - [x] e2e tests (`test/classes.e2e-spec.ts`); smoke-test cases appended
-- [~] **Chunk 6 — Students + Enrollment** (teacher-first MVP: teacher-owned students; M2M enrollment)
+- [x] **Chunk 6 — Students + Enrollment** (teacher-first MVP: teacher-owned students; M2M enrollment) (merged, PR #6)
   (built on branch `feat/students-and-enrollment`; PR open)
   - [x] `Student` entity (`students` table): teacher-owned (`teacherId` from auth),
         `schoolId` **nullable** (School relation dropped, mirroring the Chunk 5
@@ -38,7 +38,7 @@
         `DELETE /classes/:id/students/:studentId` (unenroll only), `GET /students/:id`
         (+ class chips), `GET /students`. Teacher-scoped, 404 (not 403) if not theirs
   - [x] e2e tests (`test/students.e2e-spec.ts`, incl. cross-tenant); smoke cases appended
-- [ ] **Chunk 7 — Behaviors** (per-student goals)
+- [x] **Chunk 7 — Behaviors** (per-student goals) (built on branch `feat/behavior-goals`)
 - [ ] **Chunk 8 — Behavior entries** (daily yes/no)
 - [ ] **Chunk 9 — Reports** (computed jsonb snapshots)
 - [ ] **Chunk 10 — Audit log** (write-always + conditional view logging)

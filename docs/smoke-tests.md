@@ -130,3 +130,24 @@ With `TOKEN2` = a `dev-teacher-2` token, a class `$CID` and student `$SID` owned
   `DELETE /classes/$CID/students/$SID` as `TOKEN2` → **404** (class isn't theirs).
 - `GET /students/$SID` as `TOKEN2` → **404** (student isn't theirs).
 - `GET /students` as `TOKEN2` → does not include `dev-teacher-1`'s students.
+
+## Chunk 7 — Behavior goals (per-student)
+
+Setup: a student `$SID` on your roster (Chunk 6). `TOKEN` = `dev-teacher-1`.
+
+| # | Check | Command | Expect |
+|---|-------|---------|--------|
+| 7.1 | Create goal | `curl -s -X POST $BASE/students/$SID/behaviors -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"name":"Raises hand before speaking","description":"Waits to be called on."}'` | `201`, body `{id,studentId,name,description,goalType:"yes_no",createdAt}` |
+| 7.2 | Omitted description → null | body `{"name":"Stays in seat"}` | `201`; `description` is `null` |
+| 7.3 | Blank description → null | body `{"name":"Transitions calmly","description":"   "}` | `201`; `description` is `null` |
+| 7.4 | Blank / missing name rejected | body `{"description":"x"}` or `{"name":"   "}` | `400` |
+| 7.5 | List goals | `curl -s $BASE/students/$SID/behaviors -H "Authorization: Bearer $TOKEN"` | `200`, array in creation order |
+| 7.6 | Update name + clear description | `curl -s -X PATCH $BASE/behaviors/$BID -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"name":"New name","description":null}'` | `200`; `name` updated, `description` `null` |
+| 7.7 | Delete goal | `curl -s -o /dev/null -w '%{http_code}' -X DELETE $BASE/behaviors/$BID -H "Authorization: Bearer $TOKEN"` | `204`; list (7.5) no longer includes it |
+| 7.8 | Unknown goal id | `PATCH`/`DELETE /behaviors/00000000-0000-0000-0000-000000000000` | `404` |
+| 7.9 | Non-uuid id | `curl -s -o /dev/null -w '%{http_code}' $BASE/students/not-a-uuid/behaviors -H "Authorization: Bearer $TOKEN"` | `400` |
+
+### Cross-tenant (404-not-403)
+With `TOKEN2` = `dev-teacher-2`, and `$SID`/`$BID` owned by `dev-teacher-1`:
+- `POST /students/$SID/behaviors`, `GET /students/$SID/behaviors` as `TOKEN2` → **404** (student isn't theirs).
+- `PATCH /behaviors/$BID`, `DELETE /behaviors/$BID` as `TOKEN2` → **404** (goal isn't theirs).
